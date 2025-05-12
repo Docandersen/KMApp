@@ -1,0 +1,559 @@
+###############################################################################
+#                                                                             #
+#  INTEGRATED KNOWLEDGE MANAGEMENT SOLUTION (IKMS) - SINGLE FILE REPRESENTATION #
+#                                                                             #
+#  WARNING: This format combines the entire project structure and sample      #
+#           code into one file for demonstration purposes only. It is NOT     #
+#           a practical way to manage a real software project.                #
+#                                                                             #
+###############################################################################
+
+#==============================================================================
+# Project Root: ikms-project/
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# File: ikms-project/README.md
+#------------------------------------------------------------------------------
+# ```markdown
+# # Integrated Knowledge Management Solution (IKMS)
+#
+# This project implements the IKMS as described in the design document.
+# It includes a backend API, a web frontend, and a mobile frontend,
+# leveraging AI and a Mixture of Experts architecture.
+#
+# ## Project Structure
+#
+# - `backend/`: Python FastAPI backend with expert modules.
+# - `frontend/`: React web app and React Native mobile app.
+# - `deployment/`: Docker, Kubernetes, and script files for deployment.
+# - `docs/`: Project documentation.
+# - `.github/`: CI/CD workflow definitions.
+#
+# ## Setup Instructions
+#
+# (Refer to `docs/setup_guide.md` for detailed instructions)
+#
+# 1.  **Prerequisites:** Docker, Docker Compose, Node.js, npm/yarn, Python 3.9+
+# 2.  **Clone the repository:** `git clone ...`
+# 3.  **Configure Environment:** Copy `.env.example` files to `.env` in relevant directories and fill in secrets.
+# 4.  **Local Development:** Run `docker-compose -f deployment/docker-compose.yml up --build`
+# 5.  **Access:**
+#     - Backend API: `http://localhost:8000`
+#     - Web Frontend: `http://localhost:3000`
+#     - Mobile: Follow React Native instructions.
+#
+# ## License
+#
+# (Specify License - e.g., MIT, Apache 2.0)
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/.gitignore
+#------------------------------------------------------------------------------
+# ```gitignore
+# # Python
+# __pycache__/
+# *.py[cod]
+# *$py.class
+# .env
+# .venv/
+# venv/
+# ENV/
+# env/
+# virtualenv/
+# htmlcov/
+# .pytest_cache/
+# .mypy_cache/
+# .dmypy.json
+# dmypy.json
+# *.egg-info/
+# .eggs/
+# dist/
+# build/
+# *.so
+#
+# # Node.js
+# node_modules/
+# build/
+# dist/
+# .npm
+# npm-debug.log*
+# yarn-debug.log*
+# yarn-error.log*
+# .pnp/
+# .pnp.js
+# .yarn/cache
+# .yarn/unplugged
+# .yarn/build-state.yml
+# .yarn/install-state.gz
+# *.log
+#
+# # IDE / OS Files
+# .idea/
+# .vscode/
+# *.sublime-project
+# *.sublime-workspace
+# *.DS_Store
+# Thumbs.db
+#
+# # Mobile specific (React Native)
+# # iOS
+# frontend/mobile/ios/build/
+# frontend/mobile/ios/Pods/
+# # Android
+# frontend/mobile/android/build/
+# frontend/mobile/android/app/build/
+# frontend/mobile/android/.gradle/
+# frontend/mobile/android/captures/
+# frontend/mobile/android/local.properties
+#
+# # Deployment secrets (add specific files if needed)
+# deployment/kubernetes/secrets.yaml # Be careful with committing templates vs actual secrets
+#
+# # Other
+# *.bak
+# *.swp
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/LICENSE
+#------------------------------------------------------------------------------
+# ```text
+# # Placeholder for your chosen open-source or commercial license.
+# # Example: MIT License text would go here.
+# ```
+
+#==============================================================================
+# Directory: ikms-project/backend/
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/requirements.txt
+#------------------------------------------------------------------------------
+# ```txt
+# # Core Framework
+# fastapi[all]>=0.100.0 # Includes uvicorn, pydantic, starlette, etc.
+# python-dotenv>=1.0.0
+#
+# # Database Drivers & ORM
+# sqlalchemy>=2.0.0
+# psycopg2-binary>=2.9.0 # Or asyncpg for async
+# elasticsearch[async]>=8.0.0,<9.0.0 # Async support included
+# neo4j>=5.0.0
+# redis>=5.0.0
+# alembic>=1.9.0 # For SQL migrations
+#
+# # AI / ML / NLP
+# langchain>=0.1.0 # Core LangChain library
+# transformers>=4.30.0 # Hugging Face models
+# sentence-transformers>=2.2.0 # For embeddings
+# torch>=2.0.0 # If using PyTorch models
+# # tensorflow>=2.12.0 # If using TensorFlow models
+# # faiss-cpu # Or faiss-gpu - if using FAISS locally
+# # pinecone-client # If using Pinecone
+# # weaviate-client # If using Weaviate
+# # openai # If using OpenAI models directly
+#
+# # Authentication & Security
+# python-jose[cryptography]>=3.3.0 # For JWT
+# passlib[bcrypt]>=1.7.4 # For password hashing
+#
+# # Real-time
+# websockets>=11.0.0 # If using FastAPI's WebSocket support directly
+#
+# # Development & Testing
+# pytest>=7.0.0
+# pytest-cov
+# httpx>=0.24.0 # For testing FastAPI endpoints
+# mypy
+# ruff # Linter/formatter
+#
+# # Add other specific dependencies as needed
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/Dockerfile
+#------------------------------------------------------------------------------
+# ```dockerfile
+# # Use an official Python runtime as a parent image
+# FROM python:3.11-slim-bullseye
+#
+# # Set environment variables
+# ENV PYTHONDONTWRITEBYTECODE 1
+# ENV PYTHONUNBUFFERED 1
+#
+# # Set work directory
+# WORKDIR /app
+#
+# # Install system dependencies (if any are needed, e.g., for specific libraries)
+# # RUN apt-get update && apt-get install -y --no-install-recommends some-package && rm -rf /var/lib/apt/lists/*
+#
+# # Install Python dependencies
+# # Copy only requirements first to leverage Docker cache
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir --upgrade pip
+# RUN pip install --no-cache-dir -r requirements.txt
+#
+# # Copy project code
+# COPY ./app /app/app
+#
+# # Expose port 8000 (or the port your app runs on)
+# EXPOSE 8000
+#
+# # Command to run the application
+# # Use Gunicorn for production deployments for better performance and scaling
+# # Adjust worker count based on your server resources
+# # CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-c", "/app/gunicorn_conf.py", "app.main:app"]
+#
+# # For development (as used in docker-compose with --reload):
+# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/.env.example
+#------------------------------------------------------------------------------
+# ```dotenv
+# # Backend Environment Variables
+#
+# PROJECT_NAME="Integrated Knowledge Management Solution"
+# API_V1_STR="/api/v1"
+#
+# # Security
+# SECRET_KEY=your_very_secret_key_here_please_change_me # Generate a strong random key
+# ALGORITHM="HS256" # JWT Algorithm
+# ACCESS_TOKEN_EXPIRE_MINUTES=30
+#
+# # CORS Origins (Comma-separated or space-separated list of allowed origins)
+# # Use "*" for development only, be specific in production
+# BACKEND_CORS_ORIGINS="http://localhost:3000 [http://127.0.0.1:3000](http://127.0.0.1:3000)"
+#
+# # Database URLs
+# DATABASE_URL="postgresql://user:password@postgres_db:5432/ikms_db"
+# ELASTICSEARCH_URL="http://elasticsearch:9200"
+# NEO4J_URI="bolt://neo4j:7687"
+# NEO4J_USER="neo4j"
+# NEO4J_PASSWORD="password" # Change this!
+# REDIS_URL="redis://redis:6379/0"
+#
+# # Vector Database (Example - configure based on your choice)
+# # PINECONE_API_KEY="your-pinecone-api-key"
+# # PINECONE_ENVIRONMENT="your-pinecone-environment"
+# # WEAVIATE_URL="http://weaviate:8080"
+# # FAISS_INDEX_PATH="/app/data/faiss_index.bin" # If using local FAISS
+#
+# # AI Service Keys (if needed)
+# # OPENAI_API_KEY="your-openai-api-key"
+# # AZURE_SPEECH_KEY="your-azure-speech-key"
+# # AZURE_SPEECH_REGION="your-azure-region"
+#
+# # Other configurations
+# # Example: Email server settings for notifications
+# # SMTP_HOST="smtp.example.com"
+# # SMTP_PORT=587
+# # SMTP_USER="user@example.com"
+# # SMTP_PASSWORD="password"
+#
+# ```
+
+#------------------------------------------------------------------------------
+# Directory: ikms-project/backend/app/
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/__init__.py
+#------------------------------------------------------------------------------
+# (Empty file to mark the directory as a Python package)
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/main.py
+#------------------------------------------------------------------------------
+# ```python
+# # backend/app/main.py
+# from fastapi import FastAPI
+# from fastapi.middleware.cors import CORSMiddleware
+#
+# from app.config import settings
+# from app.api.v1.router import api_router
+# from app.database import engine, Base # Assuming SQLAlchemy base
+# # Import expert routers if they are defined separately and need inclusion here
+#
+# # TODO: Initialize Database tables if needed (e.g., using Alembic for migrations is better)
+# # Base.metadata.create_all(bind=engine)
+#
+# app = FastAPI(
+#     title=settings.PROJECT_NAME,
+#     openapi_url=f"{settings.API_V1_STR}/openapi.json"
+# )
+#
+# # CORS Middleware
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+#
+# # Include the main API router
+# app.include_router(api_router, prefix=settings.API_V1_STR)
+#
+# @app.get("/")
+# async def root():
+#     """ Basic health check endpoint """
+#     return {"message": f"Welcome to {settings.PROJECT_NAME}"}
+#
+# # TODO: Add WebSocket endpoints (perhaps using expert routers)
+# # from app.experts.collaboration_workflow.websockets import websocket_endpoint
+# # app.add_api_websocket_route("/ws", websocket_endpoint)
+#
+# # TODO: Add startup/shutdown event handlers (e.g., connect/disconnect DBs)
+# # @app.on_event("startup")
+# # async def startup_event():
+# #     pass
+#
+# # @app.on_event("shutdown")
+# # async def shutdown_event():
+# #     pass
+#
+# if __name__ == "__main__":
+#     import uvicorn
+#     # This is for local debugging only. Use Gunicorn/Uvicorn in production.
+#     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) # Note: Added reload=True for consistency if run directly
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/config.py
+#------------------------------------------------------------------------------
+# ```python
+# # backend/app/config.py
+# import os
+# from pydantic_settings import BaseSettings
+# from dotenv import load_dotenv
+# from typing import List, Union
+#
+# # Load .env file variables
+# load_dotenv()
+#
+# class Settings(BaseSettings):
+#     PROJECT_NAME: str = "Integrated Knowledge Management Solution"
+#     API_V1_STR: str = "/api/v1"
+#
+#     # Security
+#     SECRET_KEY: str
+#     ALGORITHM: str = "HS256"
+#     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+#
+#     # CORS
+#     BACKEND_CORS_ORIGINS: Union[str, List[str]] = [] # Allow str for single or list
+#
+#     # Database URLs
+#     DATABASE_URL: str
+#     ELASTICSEARCH_URL: str
+#     NEO4J_URI: str
+#     NEO4J_USER: str = "neo4j"
+#     NEO4J_PASSWORD: str
+#     REDIS_URL: str
+#
+#     # Vector DB Config (example)
+#     # PINECONE_API_KEY: str | None = None
+#     # PINECONE_ENVIRONMENT: str | None = None
+#     # WEAVIATE_URL: str | None = None
+#     # FAISS_INDEX_PATH: str | None = None
+#
+#     # AI Keys (example)
+#     # OPENAI_API_KEY: str | None = None
+#
+#     class Config:
+#         case_sensitive = True
+#         env_file = ".env" # Optional: Specify env file directly for pydantic-settings
+#
+#     # Post-process CORS origins if it's a string
+#     @property
+#     def BACKEND_CORS_ORIGINS_LIST(self) -> List[str]:
+#         if isinstance(self.BACKEND_CORS_ORIGINS, str):
+#             return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(',')]
+#         return self.BACKEND_CORS_ORIGINS
+#
+# settings = Settings()
+# ```
+
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/database.py
+#------------------------------------------------------------------------------
+# ```python
+# # backend/app/database.py
+# from sqlalchemy import create_engine
+# from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.orm import sessionmaker
+# from elasticsearch import AsyncElasticsearch
+# from neo4j import GraphDatabase
+# import redis.asyncio as redis
+#
+# from app.config import settings
+#
+# # --- PostgreSQL (SQLAlchemy) ---
+# try:
+#     engine = create_engine(settings.DATABASE_URL) # Add pool_pre_ping=True for robustness
+#     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+#     Base = declarative_base()
+#     print("Successfully connected to PostgreSQL.")
+# except Exception as e:
+#     print(f"Error connecting to PostgreSQL: {e}")
+#     engine = None
+#     SessionLocal = None
+#     Base = declarative_base() # Still need Base for models
+#
+# # --- Elasticsearch ---
+# try:
+#     es_client = AsyncElasticsearch(
+#         hosts=[settings.ELASTICSEARCH_URL]
+#         # Add authentication if required: http_auth=('user', 'password')
+#         # Add SSL/TLS verification if needed: use_ssl=True, verify_certs=True, ca_certs='/path/to/ca.crt'
+#     )
+#     # TODO: Add check for connection if needed on startup
+#     print("Elasticsearch client initialized (connection check pending).")
+# except Exception as e:
+#     print(f"Error initializing Elasticsearch client: {e}")
+#     es_client = None
+#
+# # --- Neo4j ---
+# try:
+#     neo4j_driver = GraphDatabase.driver(
+#         settings.NEO4J_URI,
+#         auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+#     )
+#     # Verify connection
+#     neo4j_driver.verify_connectivity()
+#     print("Successfully connected to Neo4j.")
+# except Exception as e:
+#     print(f"Error connecting to Neo4j: {e}")
+#     neo4j_driver = None
+#
+# # --- Redis ---
+# try:
+#     redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+#     # TODO: Add check for connection if needed on startup
+#     print("Redis client initialized (connection check pending).")
+# except Exception as e:
+#     print(f"Error initializing Redis client: {e}")
+#     redis_client = None
+#
+# # --- Dependency for FastAPI ---
+# def get_db():
+#     """ Dependency to get a DB session. """
+#     if SessionLocal is None:
+#         raise RuntimeError("Database session not configured.")
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
+#
+# async def get_es_client() -> AsyncElasticsearch | None:
+#     """ Dependency to get the Elasticsearch client. """
+#     # TODO: Implement more robust connection check/handling if needed
+#     if es_client and await es_client.ping():
+#         return es_client
+#     print("Warning: Elasticsearch client not available or connection failed.")
+#     return None # Or raise an exception
+#
+# async def get_neo4j_driver(): # Driver is thread-safe, can be reused
+#     """ Dependency to get the Neo4j driver. """
+#     if neo4j_driver is None:
+#         raise RuntimeError("Neo4j driver not configured.")
+#     # Could add a connectivity check here, but driver handles pooling
+#     return neo4j_driver
+#
+# async def get_redis_client() -> redis.Redis | None:
+#     """ Dependency to get the Redis client. """
+#     # TODO: Implement more robust connection check/handling if needed
+#     if redis_client: # and await redis_client.ping(): # Ping can add overhead
+#         return redis_client
+#     print("Warning: Redis client not available.")
+#     return None # Or raise an exception
+#
+# # TODO: Add dependencies for Vector DB client based on choice
+#
+# ```
+
+#------------------------------------------------------------------------------
+# Directory: ikms-project/backend/app/models/
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/models/__init__.py (Empty)
+# File: ikms-project/backend/app/models/user.py (SQLAlchemy User model)
+# File: ikms-project/backend/app/models/knowledge_asset.py (SQLAlchemy Asset model)
+# (Add other models as needed)
+
+#------------------------------------------------------------------------------
+# Directory: ikms-project/backend/app/core/
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/core/__init__.py (Empty)
+# File: ikms-project/backend/app/core/security.py (Password hashing, JWT creation/verification)
+# File: ikms-project/backend/app/core/permissions.py (RBAC implementation logic)
+
+#------------------------------------------------------------------------------
+# Directory: ikms-project/backend/app/experts/
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/experts/__init__.py (Empty)
+
+# --- Expert Module: security_data_protection ---
+# File: ikms-project/backend/app/experts/security_data_protection/__init__.py (Empty)
+# File: ikms-project/backend/app/experts/security_data_protection/agent.py (Anomaly detection, compliance audit agents)
+# File: ikms-project/backend/app/experts/security_data_protection/api.py (Security-specific API endpoints, e.g., audit logs)
+# File: ikms-project/backend/app/experts/security_data_protection/service.py (Encryption logic, ZTA integration)
+
+# --- Expert Module: multi_platform_compatibility ---
+# File: ikms-project/backend/app/experts/multi_platform_compatibility/__init__.py (Empty)
+# File: ikms-project/backend/app/experts/multi_platform_compatibility/agent.py (Backend logic for adaptive UI suggestions)
+# File: ikms-project/backend/app/experts/multi_platform_compatibility/api.py (Endpoints to support adaptive UI)
+
+# --- Expert Module: ai_ml ---
+# File: ikms-project/backend/app/experts/ai_ml/__init__.py (Empty)
+#------------------------------------------------------------------------------
+# File: ikms-project/backend/app/experts/ai_ml/agent.py
+#------------------------------------------------------------------------------
+# ```python
+# # backend/app/experts/ai_ml/agent.py
+# from app.experts.ai_ml.nlp_service import get_nlp_model # Placeholder
+# from app.experts.ai_ml.vector_store import search_vectors # Placeholder
+# from app.schemas.knowledge_asset import KnowledgeAssetCreate, KnowledgeAsset # Pydantic schema (assuming these exist)
+# import asyncio # For simulating async work
+#
+# # Placeholder function definitions until real services are built
+# async def get_nlp_model(): return None
+# async def search_vectors(query_vector, top_k): return []
+# async def get_assets_by_ids(ids): return []
+#
+# class AISearchCategorizationAgent:
+#     def __init__(self):
+#         self.nlp_model = get_nlp_model()
+#         print("AI Search & Categorization Agent Initialized")
+#
+#     async def categorize_asset(self, asset: KnowledgeAsset) -> list[str]:
+#         """ Use NLP to automatically suggest categories/tags. """
+#         # TODO: Implement actual NLP categorization logic using self.nlp_model
+#         print(f"AI Agent: Categorizing asset '{asset.title}'...")
+#         # Example placeholder logic
+#         text_content = asset.content or "" # Assuming content field exists
+#         if not text_content:
+#              return ["uncategorized"]
+#
+#         # Replace with actual model inference
+#         await asyncio.sleep(0.1) # Simulate async work
+#         categories = ["example_tag1", "ai_generated"]
+#         if "security" in text_content.lower():
+#             categories.append("security")
+#         return categories
+#
+#     async def perform_semantic_search(self, query: str) -> list[KnowledgeAsset]:
+#         """ Use vector search for semantic matching. """
+#         # TODO: Implement vector embedding of query and search in vector store
+#         print(f"AI Agent: Performing semantic search for '{query}'...")
+#         # 1. Embed the query using self.nlp_model or a dedicated embedding model
+#         # query_vector = self.nlp_model.embed(query)
+#         # 2. Search the vector store
+#         # results = await search_vectors(query_vector, top_k=10)
+#         # 3. Retrieve full asset details based on results (e.g., from Postgres/ES)
+#         # assets = await get_assets_by_ids([r.id for r in results]) # Placeholder db call
+#         await asyncio
